@@ -9,12 +9,13 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <avr/interrupt.h>
 
-#include "w5100.h"
+#include "utility/w5100.h"
 
 // W5100 controller instance
 W5100Class W5100;
+
+#define SPI_CS 10
 
 #define TX_RX_MAX_BUF_SIZE 2048
 #define TX_BUF 0x1100
@@ -27,9 +28,11 @@ void W5100Class::init(void)
 {
   delay(300);
 
-  SPI.begin();
-  initSS();
-  
+  SPI.begin(SPI_CS);
+  // Set clock to 4Mhz (W5100 should support up to about 14Mhz)
+  SPI.setClockDivider(SPI_CS, 21);
+  SPI.setDataMode(SPI_CS, SPI_MODE0);
+
   writeMR(1<<RST);
   writeTMSR(0x55);
   writeRMSR(0x55);
@@ -98,7 +101,7 @@ void W5100Class::recv_data_processing(SOCKET s, uint8_t *data, uint16_t len, uin
 {
   uint16_t ptr;
   ptr = readSnRX_RD(s);
-  read_data(s, (uint8_t *)ptr, data, len);
+  read_data(s, ptr, data, len);
   if (!peek)
   {
     ptr += len;
@@ -106,13 +109,13 @@ void W5100Class::recv_data_processing(SOCKET s, uint8_t *data, uint16_t len, uin
   }
 }
 
-void W5100Class::read_data(SOCKET s, volatile uint8_t *src, volatile uint8_t *dst, uint16_t len)
+void W5100Class::read_data(SOCKET s, volatile uint16_t src, volatile uint8_t *dst, uint16_t len)
 {
   uint16_t size;
   uint16_t src_mask;
   uint16_t src_ptr;
 
-  src_mask = (uint16_t)src & RMASK;
+  src_mask = src & RMASK;
   src_ptr = RBASE[s] + src_mask;
 
   if( (src_mask + len) > RSIZE ) 
@@ -129,12 +132,10 @@ void W5100Class::read_data(SOCKET s, volatile uint8_t *src, volatile uint8_t *ds
 
 uint8_t W5100Class::write(uint16_t _addr, uint8_t _data)
 {
-  setSS();  
-  SPI.transfer(0xF0);
-  SPI.transfer(_addr >> 8);
-  SPI.transfer(_addr & 0xFF);
-  SPI.transfer(_data);
-  resetSS();
+  SPI.transfer(SPI_CS, 0xF0, SPI_CONTINUE);
+  SPI.transfer(SPI_CS, _addr >> 8, SPI_CONTINUE);
+  SPI.transfer(SPI_CS, _addr & 0xFF, SPI_CONTINUE);
+  SPI.transfer(SPI_CS, _data);
   return 1;
 }
 
@@ -142,25 +143,21 @@ uint16_t W5100Class::write(uint16_t _addr, const uint8_t *_buf, uint16_t _len)
 {
   for (uint16_t i=0; i<_len; i++)
   {
-    setSS();    
-    SPI.transfer(0xF0);
-    SPI.transfer(_addr >> 8);
-    SPI.transfer(_addr & 0xFF);
+	SPI.transfer(SPI_CS, 0xF0, SPI_CONTINUE);
+	SPI.transfer(SPI_CS, _addr >> 8, SPI_CONTINUE);
+	SPI.transfer(SPI_CS, _addr & 0xFF, SPI_CONTINUE);
+	SPI.transfer(SPI_CS, _buf[i]);
     _addr++;
-    SPI.transfer(_buf[i]);
-    resetSS();
   }
   return _len;
 }
 
 uint8_t W5100Class::read(uint16_t _addr)
 {
-  setSS();  
-  SPI.transfer(0x0F);
-  SPI.transfer(_addr >> 8);
-  SPI.transfer(_addr & 0xFF);
-  uint8_t _data = SPI.transfer(0);
-  resetSS();
+  SPI.transfer(SPI_CS, 0x0F, SPI_CONTINUE);
+  SPI.transfer(SPI_CS, _addr >> 8, SPI_CONTINUE);
+  SPI.transfer(SPI_CS, _addr & 0xFF, SPI_CONTINUE);
+  uint8_t _data = SPI.transfer(SPI_CS, 0);
   return _data;
 }
 
@@ -168,13 +165,11 @@ uint16_t W5100Class::read(uint16_t _addr, uint8_t *_buf, uint16_t _len)
 {
   for (uint16_t i=0; i<_len; i++)
   {
-    setSS();
-    SPI.transfer(0x0F);
-    SPI.transfer(_addr >> 8);
-    SPI.transfer(_addr & 0xFF);
+	SPI.transfer(SPI_CS, 0x0F, SPI_CONTINUE);
+	SPI.transfer(SPI_CS, _addr >> 8, SPI_CONTINUE);
+	SPI.transfer(SPI_CS, _addr & 0xFF, SPI_CONTINUE);
+    _buf[i] = SPI.transfer(SPI_CS, 0);
     _addr++;
-    _buf[i] = SPI.transfer(0);
-    resetSS();
   }
   return _len;
 }
