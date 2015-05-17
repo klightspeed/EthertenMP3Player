@@ -1,0 +1,14 @@
+*.o
+*.a
+*~
+.*.sw?
+*.elf
+*.eps
+*.png
+*.pdf
+*.bak
+*.lst
+*.map
+*.hex
+*.bin
+*.srec
