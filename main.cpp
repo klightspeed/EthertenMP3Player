@@ -46,7 +46,7 @@ void setup() {
 
 #ifndef USE_DEBUG_UDP
   dbginit();
-  
+
   dbgprint(F("Reset cause: "));
   if (resetcause & _BV(WDRF)) {
     dbgprint(F("Watchdog reset; "));
@@ -153,4 +153,12 @@ void loop() {
 #ifdef USE_TFTP
   TFTPServer_loop();
 #endif
+}
+
+int main (void) {
+  setup();
+
+  while (1) {
+    loop();
+  }
 }
