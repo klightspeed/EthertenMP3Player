@@ -1,7 +1,7 @@
 #include "config.h"
 #include <SdFat.h>
-#include <EepromBootData.h>
 #include <avr/pgmspace.h>
+#include "EepromBootData.h"
 #include "mp3.h"
 #include "http.h"
 

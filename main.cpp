@@ -11,8 +11,8 @@
 #include <avr/boot.h>
 #include <util/delay.h>
 #include <SPI.h>
-#include <EepromBootData.h>
 #include <stdio.h>
+#include "EepromBootData.h"
 #include "tftp.h"
 #include "http.h"
 #include "mp3.h"
