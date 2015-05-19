@@ -46,21 +46,6 @@ void setup() {
 
 #ifndef USE_DEBUG_UDP
   dbginit();
-
-  dbgprint(F("Reset cause: "));
-  if (resetcause & _BV(WDRF)) {
-    dbgprint(F("Watchdog reset; "));
-  }
-  if (resetcause & _BV(BORF)) {
-    dbgprint(F("Brownout reset; "));
-  }
-  if (resetcause & _BV(EXTRF)) {
-    dbgprint(F("External reset; "));
-  }
-  if (resetcause & _BV(PORF)) {
-    dbgprint(F("Power-on reset; "));
-  }
-  dbgprintln();
 #endif
   
   if (!sd.begin(9, SPI_FULL_SPEED)) while (1); //sd.initErrorHalt();
@@ -125,6 +110,24 @@ void setup() {
   dbgend();
 
   wdt_reset();
+
+#if DEBUG
+  dbgbegin();
+  dbgprint(F("Reset cause: "));
+  if (resetcause & _BV(WDRF)) {
+    dbgprint(F("Watchdog reset"));
+  }
+  if (resetcause & _BV(BORF)) {
+    dbgprint(F("Brownout reset"));
+  }
+  if (resetcause & _BV(EXTRF)) {
+    dbgprint(F("External reset"));
+  }
+  if (resetcause & _BV(PORF)) {
+    dbgprint(F("Power-on reset"));
+  }
+  dbgend();
+#endif
 
 #ifdef USE_HTTP
   HTTPServer_init();
