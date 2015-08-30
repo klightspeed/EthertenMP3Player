@@ -225,192 +225,6 @@ void HTTP_PrintIndex() {
   client_write(F("<!DOCTYPE html>\n<html>\n<body>\n<script type=\"text/javascript\">\nfunction s(f,m,fl){\nvar r=new XMLHttpRequest();\nr.open(m,f['n'].value,0);\nr.send(fl);\nlocation.reload();\n}\nfunction p(f){\ns(f,'PUT',f['f'].files[0]);\n}\nfunction d(f){\ns(f,'DELETE','');\n}\nfunction l(){\nvar r=new XMLHttpRequest();\nr.open(\"GET\",\"/files\",0);\nr.send();\nvar fi=JSON.parse(r.responseText);\nvar w=function(c){document.write(c);};\nif('mp3' in fi){\nw('<p>Currently playing: <a href=\"'+fi.mp3+'\">'+fi.mp3+'</a></p><p>Current position: '+fi.pos+'s</p>');\n}\nw('<form><p>Upload:</p><p>File:<input type=\"file\" name=\"f\"/></p><p>Name:<input type=\"text\" name=\"n\"/></p><p><input type=\"button\" value=\"Upload\" onclick=\"p(this.form)\"/></p></form>');\nw('<table><tr><th>Name</th><th>Size</th><th>&nbsp;</th></tr><tr><td><a href=\"flash\">flash</a></td><td>32768</td><td>&nbsp;</td></tr>');\nfi.files.forEach(function(f){\nw('<tr><td><a href=\"'+f.name+'\">'+f.name+'</a></td><td>'+f.size+'</td><td><form><input type=\"hidden\" name=\"n\" value=\"'+f.name+'\"/><input type=\"button\" value=\"Delete\" onclick=\"d(this.form)\"/></form></td></tr>');\n});\nw('</table>');\n}\nl();\n</script>\n</body>\n</html>"));
 }
 
-/*
-void HTML_WriteFileLink(char *filename, bool showdelete) {
-  if (showdelete) {
-    client_write(F("<form>"));
-  }
-  client_write(F("<a href=\""));
-  client_write(filename);
-  client_write(F("\">"));
-  client_write(filename);
-  client_write(F("</a>"));
-  if (showdelete) {
-    client_write(F("<input type=\"hidden\" name=\"n\" value=\""));
-    client_write(filename);
-    client_write(F("\"/><input type=\"button\" value=\"Delete\" onclick=\"d(this.form)\"/></form>"));
-  }
-}
-
-void HTTP_ListSDFiles() {
-  HTTPRespondOK(F("text/html"));
-  client_write(F(
-    "<!DOCTYPE html>"
-    "<html>"
-     "<head>"
-      "<script>"
-       "function s(f,m,fl){"
-        "var r=new XMLHttpRequest();"
-        "r.open(m,f['n'].value,0);"
-        "r.send(fl);"
-        "location.reload();"
-       "}"
-       "function p(f){"
-        "s(f,'PUT',f['f'].files[0]);"
-       "}"
-       "function d(f){"
-        "s(f,'DELETE','');"
-       "}"
-      "</script>"
-     "</head>"
-     "<body>"
-#ifdef USE_MP3
-      "<p>Currently playing: "
-  ));
-  HTML_WriteFileLink(MP3_LoopFilename, false);
-  client_write(F(
-      "</p>"
-#endif
-      "<form>"
-       "<p>Upload "
-        "<input type=\"file\" name=\"f\"/>"
-        "as"
-        "<input type=\"text\" name=\"n\"/>"
-        "<input type=\"button\" value=\"Upload\" onclick=\"p(this.form)\"/>"
-       "</p>"
-      "</form>"
-      "<ul>"
-      "<li><a href=\"flash\">flash</a></li>"
-  ));
-
-  char filename[16];
-  char fsize[12];
-  dir_t p;
-
-  sd.vwd()->rewind();
-  while (sd.vwd()->readDir(&p) > 0) {
-    int pos = 0;
-    char *ext = NULL;
-    if (p.name[0] == DIR_NAME_FREE) break;
-    if (p.name[0] == DIR_NAME_DELETED || p.name[0] == '.') continue;
-    if (!DIR_IS_FILE_OR_SUBDIR(&p)) continue;
-
-    for (uint8_t i = 0; i < 11; i++) {
-      if (p.name[i] == ' ') continue;
-      if (i == 8) {
-        ext = filename + pos;
-        filename[pos++] = '.';
-      }
-      filename[pos++] = (char)p.name[i];
-    }
-
-    filename[pos] = 0;
-
-    client_write(F("<li>"));
-    HTML_WriteFileLink(filename, true);
-    ltoa(p.fileSize >> 10, fsize, 10);
-    client_write(fsize);
-    client_write(F("kB</li>"));
-  }
-  client_write(F("</ul></body></html>"));
-}
- */
-
-/*
-void HTTP_BeginReadSDCmd(char *filename) {
-  CurrentHttpFile = SdFile();
-  if (CurrentHttpFile.open(filename, O_RDONLY)) {
-    CurrentHttpState = HTTPState_ReadSDCmd;
-    CurrentHttpPosition = 0;
-  } else {
-    HTTPRespondNotFound();
-  }
-}
-
-void HTTP_ContinueReadSDCmd() {
-  SdFile file;
-  byte buf[64];
-  int pos = 0;
-  int len;
-
-  while (CurrentHttpClient.connected() && (len = CurrentHttpFile.read(buf, 64)) > 0) {
-    byte bufpos = 0;
-    byte c;
-
-    if (CurrentHttpPosition == 0) {
-      while (bufpos < len - 1) {
-        if (buf[bufpos] == '\r' || buf[bufpos] == '\n') {
-          buf[bufpos] = 0;
-          break;
-        }
-
-        bufpos++;
-      }
-
-      if (bufpos == len - 1) {
-        buf[bufpos] = 0;
-      }
-
-      HTTPRespondOK((char *)buf);
-
-      bufpos++;
-      CurrentHttpPosition = 1;
-    }
-
-    for (int i = bufpos; i < len; i++) {
-      c = buf[i];
-      if (c == '@') {
-        if (i > bufpos) {
-          client_write(buf + bufpos, i - bufpos);
-        }
-
-        i++;
-
-        if (i >= len) {
-          c = CurrentHttpFile.read();
-        } else {
-          c = buf[i];
-        }
-
-        switch (c) {
-          case '@': CurrentHttpClient.write('@'); break;
-          case '-': client_close(); break;
-          case '!': asm volatile ("jmp 0x7C84"); break;
-          case '*': asm volatile ("jmp 0x7C88"); break;
-          case 't': client_write(millis() / 1000); break;
-#ifdef USE_MP3
-          case 'p': client_write(MP3Player.currentPosition() >> 10); break;
-          case 'f': client_write(MP3_LoopFilename); break;
-#endif
-        }
-
-        bufpos = i + 1;
-      }
-    }
-
-    if (bufpos < len) {
-      CurrentHttpClient.write(buf + pos, len - pos);
-    }
-
-    pos += len;
-
-    if (pos >= 512) {
-      return;
-    }
-  }
-
-  CurrentHttpFile.close();
-
-  if (CurrentHttpPosition == 0) {
-    HTTPRespondNoContent();
-  } else {
-    client_close();
-  }
-
-  CurrentHttpState = HTTPState_Init;
-}
-*/
-
 void HTTP_BeginReadSDRaw(char *filename) {
   CurrentHttpFile = SdFile();
   if (CurrentHttpFile.open(filename, O_RDONLY)) {
@@ -614,10 +428,6 @@ void HTTPServer_loop() {
     HTTP_ContinueReadFlash();
   } else if (CurrentHttpState == HTTPState_ReadSDRaw) {
     HTTP_ContinueReadSDRaw();
-  /*
-  } else if (CurrentHttpState == HTTPState_ReadSDCmd) {
-    HTTP_ContinueReadSDCmd();
-  */
   } else {
     if (CurrentHttpClient.connected()) {
       client_close();
@@ -651,15 +461,8 @@ void HTTPServer_loop() {
 	    HTTP_ListSDFilesJson();
 	    return;
           } else if (sd.exists(filename)) {
-            /*
-            if (!strcasecmp_P(filename + strlen(filename) - 4, PSTR(".cmd"))) {
-              HTTP_BeginReadSDCmd(filename);
-              return;
-            } else {
-            */
-              HTTP_BeginReadSDRaw(filename);
-              return;
-            //}
+            HTTP_BeginReadSDRaw(filename);
+            return;
           }
         } else if (!strcasecmp_P(method, PSTR("POST"))) {
           if (strstr_P(filename, PSTR("delete/")) == filename) {
