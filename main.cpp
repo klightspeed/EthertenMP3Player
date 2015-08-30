@@ -158,7 +158,7 @@ void setup() {
 #endif
 
   wdt_reset();
-  wdt_enable(WDTO_1S);
+  wdt_enable(WDTO_8S);
 }
 
 void loop() {
@@ -174,6 +174,7 @@ void loop() {
 #endif
 }
 
+/*
 int main (void) {
   setup();
 
@@ -181,3 +182,4 @@ int main (void) {
     loop();
   }
 }
+ */
