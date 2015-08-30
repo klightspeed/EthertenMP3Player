@@ -78,6 +78,9 @@ void EthernetUDP::stop()
 
 int EthernetUDP::beginPacket(const char *host, uint16_t port)
 {
+#ifdef CONFIG_NODNS
+  return 1;
+#else
   // Look up the host first
   int ret = 0;
   DNSClient dns;
@@ -90,6 +93,7 @@ int EthernetUDP::beginPacket(const char *host, uint16_t port)
   } else {
     return ret;
   }
+#endif
 }
 
 int EthernetUDP::beginPacket(IPAddress ip, uint16_t port)

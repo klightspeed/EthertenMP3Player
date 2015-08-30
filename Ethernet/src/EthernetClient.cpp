@@ -21,6 +21,9 @@ EthernetClient::EthernetClient(uint8_t sock) : _sock(sock) {
 }
 
 int EthernetClient::connect(const char* host, uint16_t port) {
+#ifdef CONFIG_NODNS
+  return 1;
+#else
   // Look up the host first
   int ret = 0;
   DNSClient dns;
@@ -33,6 +36,7 @@ int EthernetClient::connect(const char* host, uint16_t port) {
   } else {
     return ret;
   }
+#endif
 }
 
 int EthernetClient::connect(IPAddress ip, uint16_t port) {
