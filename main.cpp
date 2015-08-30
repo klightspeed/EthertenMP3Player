@@ -54,20 +54,25 @@ void setup() {
 
   EepromBootData bootdata;
 
+#ifdef DEBUG
 #ifndef USE_DEBUG_UDP
   dbginit();
+#endif
 #endif
   
   if (!sd.begin(9, SPI_FULL_SPEED)) while (1); //sd.initErrorHalt();
   if (!sd.chdir(F("/"))) while (1); //sd.errorHalt_P(PSTR("sd.chdir"));
 
+#ifdef DEBUG
 #ifndef USE_DEBUG_UDP
   dbgprintln(F("SD Card started"));
+#endif
 #endif
 
   parseConfig(bootdata);
   wdt_reset();
-  
+
+#ifdef DEBUG
 #ifndef USE_DEBUG_UDP
   char addrstr[64];
 
@@ -100,6 +105,7 @@ void setup() {
   snprintf_P(addrstr, 64, PSTR("%d.%d.%d.%d"), bootdata.ifconfig.dnsserver[0], bootdata.ifconfig.dnsserver[1], bootdata.ifconfig.dnsserver[2], bootdata.ifconfig.dnsserver[3]);
   dbgprintln(addrstr);
 #endif
+#endif
 
   Ethernet.begin(
     bootdata.ifconfig.hwaddr,
@@ -121,20 +127,20 @@ void setup() {
 
   wdt_reset();
 
-#if DEBUG
+#ifdef DEBUG
   dbgbegin();
   dbgprint(F("Reset cause: "));
   if (resetcause & _BV(WDRF)) {
-    dbgprint(F("Watchdog reset"));
+    dbgprint(F("Watchdog reset; "));
   }
   if (resetcause & _BV(BORF)) {
-    dbgprint(F("Brownout reset"));
+    dbgprint(F("Brownout reset; "));
   }
   if (resetcause & _BV(EXTRF)) {
-    dbgprint(F("External reset"));
+    dbgprint(F("External reset; "));
   }
   if (resetcause & _BV(PORF)) {
-    dbgprint(F("Power-on reset"));
+    dbgprint(F("Power-on reset; "));
   }
   dbgend();
 #endif
