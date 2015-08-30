@@ -70,7 +70,7 @@ void parseConfig(EepromBootData &bootdata) {
         }
       }
     } while (byteread > 0);
-    
+
     cfgfile.close();
   }
 }

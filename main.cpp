@@ -40,7 +40,7 @@ static void __setup_ports(void) {
 void setup() {
   wdt_reset();
   wdt_enable(WDTO_8S);
-  
+
   DDRB |= _BV(5) | _BV(2) | _BV(0);
   PORTB |= _BV(5) | _BV(2) | _BV(0);
   _delay_ms(200);
@@ -49,8 +49,8 @@ void setup() {
   PORTB |= _BV(5);
   _delay_ms(1000);
   PORTB &= ~_BV(5);
-  
-  wdt_reset();  
+
+  wdt_reset();
 
   EepromBootData bootdata;
 
@@ -59,7 +59,7 @@ void setup() {
   dbginit();
 #endif
 #endif
-  
+
   if (!sd.begin(9, SPI_FULL_SPEED)) while (1); //sd.initErrorHalt();
   if (!sd.chdir(F("/"))) while (1); //sd.errorHalt_P(PSTR("sd.chdir"));
 
@@ -88,7 +88,7 @@ void setup() {
       dbgprintln();
     }
   }
-  
+
   dbgprint(F("Hardware address: "));
   snprintf_P(addrstr, 64, PSTR("%02X:%02X:%02X:%02X:%02X:%02X"), bootdata.ifconfig.hwaddr[0], bootdata.ifconfig.hwaddr[1], bootdata.ifconfig.hwaddr[2], bootdata.ifconfig.hwaddr[3], bootdata.ifconfig.hwaddr[4], bootdata.ifconfig.hwaddr[5]);
   dbgprintln(addrstr);
@@ -114,13 +114,13 @@ void setup() {
     bootdata.ifconfig.gateway,
     bootdata.ifconfig.subnet
   );
-  
+
 #ifdef DEBUG
 #ifdef USE_DEBUG_UDP
   UdpDebug.begin(9);
 #endif
 #endif
-  
+
   dbgbegin();
   dbgprint(F("Etherten started"));
   dbgend();
@@ -152,7 +152,7 @@ void setup() {
 #ifdef USE_TFTP
   TFTPServer_init();
 #endif
-  
+
 #ifdef USE_MP3
   MP3Player_setup();
 #endif

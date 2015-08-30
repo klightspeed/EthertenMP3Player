@@ -22,7 +22,7 @@ void TFTPReadSDFile(int blknum) {
   buf[3] = blknum & 255;
   CurrentTftpClient.write(buf, 4);
   tftpfile.seekSet((uint32_t)(blknum - 1) * 512);
-  
+
   while (pos < 512) {
     int len = tftpfile.read(buf, 64);
     if (len > 0) {
@@ -32,7 +32,7 @@ void TFTPReadSDFile(int blknum) {
       break;
     }
   }
-  
+
   CurrentTftpClient.endPacket();
 }
 
@@ -46,7 +46,7 @@ void TFTPReadFlash(int blknum) {
   buf[2] = (blknum >> 8) & 255;
   buf[3] = blknum & 255;
   CurrentTftpClient.write(buf, 4);
-  
+
   if (blknum <= (32768 / 512)) {
     while (pos < 512) {
       memcpy_P(buf, ((const char *)((uint16_t)(blknum - 1) * 512 + pos)), 64);
@@ -54,7 +54,7 @@ void TFTPReadFlash(int blknum) {
       pos += 64;
     }
   }
-  
+
   CurrentTftpClient.endPacket();
 }
 
@@ -81,30 +81,30 @@ void TFTPWriteFile(unsigned int blknum, int len) {
   int wrlen;
   int pos = 0;
   char buf[64];
-  
+
   tftpfile.seekSet((uint32_t)(blknum - 1) * 512);
-  
+
   while (pos < len) {
     wrlen = len - pos;
     if (wrlen > 64) {
       wrlen = 64;
     }
-    
+
     wrlen = CurrentTftpClient.read(buf, wrlen);
     tftpfile.write(buf, wrlen);
     pos += wrlen;
   }
-  
+
   if (len < 512) {
     tftpfile.truncate((uint32_t)(blknum - 1) * 512 + len);
   }
-  
+
   TFTPSendAck(blknum);
-  
+
   if (len < 512) {
     tftpfile.sync();
     tftpfile.close();
-    
+
     if (strcasecmp_P(tftpfilename, PSTR("config.txt"))) {
       asm volatile ("jmp 0x7C84");
     }
@@ -138,7 +138,7 @@ void TFTPServer_init() {
 void TFTPServer_loop() {
   int pktsize = TftpServer.parsePacket();
   byte buf[64];
-  
+
   if (pktsize != 0 && pktsize < 64) {
     char *filename;
     char *tftpmode;
@@ -179,7 +179,7 @@ void TFTPServer_loop() {
       }
     }
   }
-  
+
   pktsize = CurrentTftpClient.parsePacket();
   if (pktsize != 0) {
     CurrentTftpClient.read(buf, 4);

@@ -14,24 +14,24 @@ uint8_t VS1053Base::begin() {
     DDR_OUT(VS1053_XCS);
     DDR_OUT(VS1053_XDCS);
     DDR_OUT(VS1053_RESET);
-    
+
     cs_deassert();
     dcs_deassert();
     reset_assert();
-    
+
     state = initialized;
-    
+
     uint8_t result = vs_init();
-    
+
     if (result) {
         cs_deassert();
         dcs_deassert();
         reset_assert();
         state = deactivated;
-        
+
         return result;
     }
-    
+
     return 0;
 }
 
@@ -48,28 +48,28 @@ uint8_t VS1053Base::vs_init() {
     reset_assert();
     _delay_ms(100);
     reset_deassert();
-    
+
     spi_divisor = 32;
     _delay_ms(10);
-    
+
     uint16_t mp3mode = register_read(VS1053_SCI_MODE);
-    
+
     if(mp3mode != (VS1053_SM_LINE1 | VS1053_SM_SDINEW)){
         return 4;
     }
-    
+
     register_write(VS1053_SCI_CLOCKF, 0x6000);
-    
+
     spi_divisor = 4;
-    
+
     _delay_ms(10);
-    
+
     uint16_t mp3clock = register_read(VS1053_SCI_CLOCKF);
-    
+
     if (mp3clock != 0x6000) {
         return 5;
     }
-    
+
     return 0;
 }
 
@@ -77,19 +77,19 @@ uint8_t VS1053Base::apply_patch(VS1053ReaderBase &reader) {
     union twobyte val;
     union twobyte addr;
     union twobyte n;
-    
+
     if (!PIN_VAL(VS1053_RESET)) {
         return 3;
     }
-    
+
     if (isplaying()) {
         return 1;
     }
-    
+
     if (!PIN_VAL(VS1053_RESET)) {
         return 3;
     }
-    
+
     while(1) {
         //addr = Plugin[i++];
         if(!reader.read(addr.byte, 2)) break;
@@ -110,7 +110,7 @@ uint8_t VS1053Base::apply_patch(VS1053ReaderBase &reader) {
             }
         }
     }
-    
+
     return 0;
 }
 
@@ -118,21 +118,21 @@ uint8_t VS1053Base::begin_play_track(VS1053ReaderBase &reader) {
     if (!PIN_VAL(VS1053_RESET)) {
         return 3;
     }
-    
+
     if (isplaying()) {
         return 1;
     }
-    
+
     if (!PIN_VAL(VS1053_RESET)) {
         return 3;
     }
-    
+
     if (state != playback) {
         state = playback;
         register_write(VS1053_SCI_DECODE_TIME, 0);
         _delay_ms(100);
     }
-    
+
     return 0;
 }
 
@@ -140,68 +140,68 @@ uint8_t VS1053Base::continue_play_track(VS1053ReaderBase &reader) {
     if (!isplaying()) {
         return 1;
     }
-    
+
     if (!PIN_VAL(VS1053_RESET)) {
         return 3;
     }
-    
+
     while (dreq()) {
         uint8_t buf[32];
         int len = reader.read(buf, 32);
-        
+
         if (len == 0) {
             flush_cancel(post);
             return 1;
         }
-    
+
         dcs_assert();
-    
+
         spi_spi0_setup(spi_divisor, true);
-        
+
         for (uint8_t i = 0; i < len; i++) {
             spi_spi0_transfer(buf[i]);
         }
-        
+
         dcs_deassert();
     }
-    
+
     return 0;
 }
 
 void VS1053Base::fillend(uint8_t fillbyte, int len) {
     dcs_assert();
-        
+
     for (int i = 0; i < len; i++) {
         while (!dreq());
         spi_spi0_transfer(fillbyte);
     }
-        
-    dcs_deassert();    
+
+    dcs_deassert();
 }
 
 void VS1053Base::flush_cancel(VS1053_Flush flushtype) {
     uint8_t fillbyte = (uint8_t)(wram_read(VS1053_para_endFillByte) & 0xFF);
-    
+
     spi_spi0_setup(spi_divisor, true);
-    
+
     if (flushtype == post || flushtype == both) {
         fillend(fillbyte, 2052);
     }
-    
+
     for (int j = 0; j < 64; j++) {
         register_write(VS1053_SCI_MODE, register_read(VS1053_SCI_MODE) | VS1053_SM_CANCEL);
-        
+
         fillend(fillbyte, 32);
-        
+
         uint16_t cancel = register_read(VS1053_SCI_MODE) & VS1053_SM_CANCEL;
-        
+
         if (cancel == 0) {
             if (flushtype == pre || flushtype == both) {
                 fillend(fillbyte, 2052);
-                return;                
+                return;
             }
         }
-        
+
         register_write(VS1053_SCI_MODE, register_read(VS1053_SCI_MODE) | VS1053_SM_RESET);
     }
 
@@ -212,19 +212,19 @@ void VS1053Base::register_write(uint8_t reg, uint8_t hi, uint8_t lo) {
     if (PIN_VAL(VS1053_RESET)) {
         return;
     }
-    
+
     while (!dreq());
-    
+
     cs_assert();
-    
+
     spi_spi0_setup(spi_divisor, true);
     spi_spi0_transfer(0x02);
     spi_spi0_transfer(reg);
     spi_spi0_transfer(hi);
     spi_spi0_transfer(lo);
-    
+
     while (!dreq());
-    
+
     cs_deassert();
 }
 
@@ -234,22 +234,22 @@ uint16_t VS1053Base::register_read(uint8_t reg) {
     if (PIN_VAL(VS1053_RESET)) {
         return 0;
     }
-    
+
     while (!dreq());
-    
+
     cs_assert();
-    
+
     spi_spi0_setup(spi_divisor, true);
     spi_spi0_transfer(0x03);
     spi_spi0_transfer(reg);
-    
+
     v.byte[1] = spi_spi0_transfer(0xFF);
     while (!dreq());
     v.byte[0] = spi_spi0_transfer(0xFF);
     while (!dreq());
-    
+
     cs_deassert();
-    
+
     return v.word;
 }
 
@@ -260,21 +260,21 @@ void VS1053Base::wram_write(uint16_t addr, uint16_t data) {
 
 uint16_t VS1053Base::wram_read(uint16_t addr) {
     uint16_t v1, v2;
-    
+
     register_write(VS1053_SCI_WRAMADDR, addr);
     v1 = register_read(VS1053_SCI_WRAM);
-    
+
     for (uint8_t i = 0; i < 4; i++) {
         register_write(VS1053_SCI_WRAMADDR, addr);
         v2 = register_read(VS1053_SCI_WRAM);
-        
+
         if (v1 == v2) {
             return v1;
         }
-        
+
         v1 = v2;
     }
-    
+
     return v1;
 }
 
