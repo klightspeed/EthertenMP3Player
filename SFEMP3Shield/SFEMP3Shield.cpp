@@ -1389,7 +1389,7 @@ uint8_t SFEMP3Shield::skipTo(uint32_t timecode){
  */
 uint32_t SFEMP3Shield::currentPosition(){
 
-  return(Mp3ReadRegister(SCI_DECODE_TIME) << 10); // multiply by 1024 to convert to milliseconds.
+  return(((uint32_t)Mp3ReadRegister(SCI_DECODE_TIME)) << 10); // multiply by 1024 to convert to milliseconds.
 }
 
 // @}
