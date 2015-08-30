@@ -21,58 +21,162 @@ static SdFile CurrentHttpFile;
 static enum HTTPState CurrentHttpState;
 static uint32_t CurrentHttpPosition;
 char HTTP_AuthString[32];
+static char recvbuf[128];
+static byte recvbuflen;
+static byte recvbufpos;
+
+static inline size_t client_write(const __FlashStringHelper *data, size_t len) {
+  if (len > 64) {
+    char _data[64];
+    int ret = 0;
+    while (ret < len) {
+      int _len = len - ret;
+      int _retlen;
+
+      if (_len > 64) {
+        _len = 64;
+      }
+
+      memcpy_P(_data, ((PGM_P)data) + ret, 64);
+      _retlen = CurrentHttpClient.write(_data, _len);
+      if (_retlen == 0) {
+        break;
+      }
+      ret += _retlen;
+    }
+    return ret;
+  } else {
+    char _data[len];
+    memcpy_P(_data, (PGM_P)data, len);
+    return CurrentHttpClient.write(_data, len);
+  }
+}
+
+static inline size_t client_write(const char *data, size_t len) {
+  return CurrentHttpClient.write(data, len);
+}
+
+static inline size_t client_write(const __FlashStringHelper *data) {
+  return client_write(data, strlen_P((PGM_P)data));
+}
+
+static inline size_t client_write(const char *data) {
+  return client_write(data, strlen(data));
+}
+
+static inline size_t client_write(int val) {
+  char _data[2 + 3 * sizeof(int)];
+  itoa(val, _data, 10);
+  return client_write(_data, strlen(_data));
+}
+
+static inline size_t client_write(unsigned int val) {
+  char _data[1 + 3 * sizeof(unsigned int)];
+  utoa(val, _data, 10);
+  return client_write(_data, strlen(_data));
+}
+
+static size_t client_read(char *data, size_t len) {
+  int pos = 0;
+
+  if (recvbufpos < recvbuflen) {
+    pos = len;
+
+    if (pos > (recvbuflen - recvbufpos)) {
+      pos = recvbuflen - recvbufpos;
+    }
+
+    memcpy(data, recvbuf + recvbufpos, pos);
+
+    recvbufpos += pos;
+  }
+
+  if (pos == len) {
+    return len;
+  }
+
+  if (len - pos >= 32) {
+    return pos + CurrentHttpClient.read((uint8_t *)data + pos, len - pos);
+  } else {
+    recvbuflen = CurrentHttpClient.read((uint8_t *)recvbuf, sizeof(recvbuf));
+    recvbufpos = len - pos;
+
+    if (recvbufpos > recvbuflen) {
+      recvbufpos = recvbuflen;
+    }
+
+    memcpy(data + pos, recvbuf, recvbufpos);
+
+    return pos + recvbufpos;
+  }
+}
+
+static inline char client_read() {
+  char c;
+  client_read(&c, 1);
+  return c;
+}
+
+static inline bool client_avail() {
+  return recvbufpos < recvbuflen || (CurrentHttpClient.connected() && CurrentHttpClient.available());
+}
+
+static inline void client_close() {
+  CurrentHttpClient.stop();
+  recvbufpos = recvbuflen = 0;
+}
 
 void HTTPRespondOK(const __FlashStringHelper *contenttype) {
-  CurrentHttpClient.print(F("HTTP/1.1 200 OK\nContent-Type: "));
-  CurrentHttpClient.print(contenttype);
-  CurrentHttpClient.print(F("\nConnection: close\n\n"));
+  client_write(F("HTTP/1.1 200 OK\nContent-Type: "));
+  client_write(contenttype);
+  client_write(F("\nConnection: close\n\n"));
 }
 
 void HTTPRespondOK(char *contenttype) {
-  CurrentHttpClient.print(F("HTTP/1.1 200 OK\nContent-Type: "));
-  CurrentHttpClient.print(contenttype);
-  CurrentHttpClient.print(F("\nConnection: close\n\n"));
+  client_write(F("HTTP/1.1 200 OK\nContent-Type: "));
+  client_write(contenttype);
+  client_write(F("\nConnection: close\n\n"));
 }
 
 void HTTPRespondNoContent() {
-  CurrentHttpClient.print(F("HTTP/1.1 204 No Content\n\n"));
-  CurrentHttpClient.stop();
+  client_write(F("HTTP/1.1 204 No Content\n\n"));
+  client_close();
 }
 
 void HTTPRespondNeedAuth() {
-  CurrentHttpClient.print(F("HTTP/1.1 401 Unauthorized\nWWW-Authenticate: Basic realm=\"MP3\"\n\n"));
-  CurrentHttpClient.stop();
+  client_write(F("HTTP/1.1 401 Unauthorized\nWWW-Authenticate: Basic realm=\"MP3\"\n\n"));
+  client_close();
 }
 
 void HTTPRespondNotFound() {
-  CurrentHttpClient.print(F("HTTP/1.1 404 Not Found\n\n"));
-  CurrentHttpClient.stop();
+  client_write(F("HTTP/1.1 404 Not Found\n\n"));
+  client_close();
 }
 
 void HTTPRespondBadRequest() {
-  CurrentHttpClient.print(F("HTTP/1.1 400 Bad Request\n\n"));
-  CurrentHttpClient.stop();
+  client_write(F("HTTP/1.1 400 Bad Request\n\n"));
+  client_close();
 }
 
 void HTML_WriteFileLink(char *filename, bool showdelete) {
   if (showdelete) {
-    CurrentHttpClient.print(F("<form>"));
+    client_write(F("<form>"));
   }
-  CurrentHttpClient.print(F("<a href=\""));
-  CurrentHttpClient.print(filename);
-  CurrentHttpClient.print(F("\">"));
-  CurrentHttpClient.print(filename);
-  CurrentHttpClient.print(F("</a>"));
+  client_write(F("<a href=\""));
+  client_write(filename);
+  client_write(F("\">"));
+  client_write(filename);
+  client_write(F("</a>"));
   if (showdelete) {
-    CurrentHttpClient.print(F("<input type=\"hidden\" name=\"n\" value=\""));
-    CurrentHttpClient.print(filename);
-    CurrentHttpClient.print(F("\"/><input type=\"button\" value=\"Delete\" onclick=\"d(this.form)\"/></form>"));
+    client_write(F("<input type=\"hidden\" name=\"n\" value=\""));
+    client_write(filename);
+    client_write(F("\"/><input type=\"button\" value=\"Delete\" onclick=\"d(this.form)\"/></form>"));
   }
 }
 
 void HTTP_ListSDFiles() {
   HTTPRespondOK(F("text/html"));
-  CurrentHttpClient.print(F(
+  client_write(F(
     "<!DOCTYPE html>"
     "<html>"
      "<head>"
@@ -96,7 +200,7 @@ void HTTP_ListSDFiles() {
       "<p>Currently playing: "
   ));
   HTML_WriteFileLink(MP3_LoopFilename, false);
-  CurrentHttpClient.print(F(
+  client_write(F(
       "</p>"
 #endif
       "<form>"
@@ -110,8 +214,9 @@ void HTTP_ListSDFiles() {
       "<ul>"
       "<li><a href=\"flash\">flash</a></li>"
   ));
-  
+
   char filename[16];
+  char fsize[12];
   dir_t p;
 
   sd.vwd()->rewind();
@@ -132,13 +237,14 @@ void HTTP_ListSDFiles() {
     }
 
     filename[pos] = 0;
-    
-    CurrentHttpClient.print(F("<li>"));
+
+    client_write(F("<li>"));
     HTML_WriteFileLink(filename, true);
-    CurrentHttpClient.print(p.fileSize >> 10);
-    CurrentHttpClient.print(F("kB</li>"));
+    ltoa(p.fileSize >> 10, fsize, 10);
+    client_write(fsize);
+    client_write(F("kB</li>"));
   }
-  CurrentHttpClient.print(F("</ul></body></html>"));
+  client_write(F("</ul></body></html>"));
 }
 
 /*
@@ -175,9 +281,9 @@ void HTTP_ContinueReadSDCmd() {
       if (bufpos == len - 1) {
         buf[bufpos] = 0;
       }
-      
+
       HTTPRespondOK((char *)buf);
-      
+
       bufpos++;
       CurrentHttpPosition = 1;
     }
@@ -186,11 +292,11 @@ void HTTP_ContinueReadSDCmd() {
       c = buf[i];
       if (c == '@') {
         if (i > bufpos) {
-          CurrentHttpClient.write(buf + bufpos, i - bufpos);
+          client_write(buf + bufpos, i - bufpos);
         }
-        
+
         i++;
-        
+
         if (i >= len) {
           c = CurrentHttpFile.read();
         } else {
@@ -199,26 +305,26 @@ void HTTP_ContinueReadSDCmd() {
 
         switch (c) {
           case '@': CurrentHttpClient.write('@'); break;
-          case '-': CurrentHttpClient.stop(); break;
+          case '-': client_close(); break;
           case '!': asm volatile ("jmp 0x7C84"); break;
           case '*': asm volatile ("jmp 0x7C88"); break;
-          case 't': CurrentHttpClient.print(millis() / 1000); break;
+          case 't': client_write(millis() / 1000); break;
 #ifdef USE_MP3
-          case 'p': CurrentHttpClient.print(MP3Player.currentPosition() >> 10); break;
-          case 'f': CurrentHttpClient.print(MP3_LoopFilename); break;
+          case 'p': client_write(MP3Player.currentPosition() >> 10); break;
+          case 'f': client_write(MP3_LoopFilename); break;
 #endif
         }
-        
+
         bufpos = i + 1;
       }
     }
-    
+
     if (bufpos < len) {
       CurrentHttpClient.write(buf + pos, len - pos);
     }
-    
+
     pos += len;
-    
+
     if (pos >= 512) {
       return;
     }
@@ -229,14 +335,14 @@ void HTTP_ContinueReadSDCmd() {
   if (CurrentHttpPosition == 0) {
     HTTPRespondNoContent();
   } else {
-    CurrentHttpClient.stop();
+    client_close();
   }
 
   CurrentHttpState = HTTPState_Init;
 }
 */
 
-bool HTTP_BeginReadSDRaw(char *filename) {
+void HTTP_BeginReadSDRaw(char *filename) {
   CurrentHttpFile = SdFile();
   if (CurrentHttpFile.open(filename, O_RDONLY)) {
     HTTPRespondOK(F("application/octet-stream"));
@@ -250,12 +356,12 @@ void HTTP_ContinueReadSDRaw() {
   byte buf[64];
   int len;
   int pos = 0;
-     
+
   while (CurrentHttpClient.connected()) {
     len = CurrentHttpFile.read(buf, 64);
 
     if (len > 0) {
-      CurrentHttpClient.write(buf, len);
+      client_write((const char *)buf, len);
       pos += len;
 
       if (pos >= 512) {
@@ -267,7 +373,7 @@ void HTTP_ContinueReadSDRaw() {
   }
 
   CurrentHttpFile.close();
-  CurrentHttpClient.stop();
+  client_close();
   CurrentHttpState = HTTPState_Init;
 }
 
@@ -280,11 +386,11 @@ void HTTP_BeginReadFlash() {
 void HTTP_ContinueReadFlash() {
   uint16_t i = 0;
   byte buf[64];
-  
+
   while (CurrentHttpPosition < 32768 && CurrentHttpClient.connected()) {
     memcpy_P(buf, (const void *)CurrentHttpPosition, 64);
-    CurrentHttpClient.write(buf, 64);
-    
+    client_write((const char *)buf, 64);
+
     CurrentHttpPosition += 64;
     i += 64;
 
@@ -293,7 +399,7 @@ void HTTP_ContinueReadFlash() {
     }
   }
 
-  CurrentHttpClient.stop();
+  client_close();
   CurrentHttpState = HTTPState_Init;
 }
 
@@ -313,15 +419,15 @@ void HTTP_ContinueWriteSD() {
   uint32_t lastread = millis();
 
   while (CurrentHttpClient.connected()) {
-    if ((len = CurrentHttpClient.read(buf, 64)) > 0) {
+    if ((len = client_read((char *)buf, 64)) > 0) {
       CurrentHttpFile.write(buf, len);
       pos += len;
       lastread = millis();
     }
-    
+
     if (pos >= 512 || millis() - lastread >= 10) {
       // keepalive
-      CurrentHttpClient.write((byte)0);
+      client_write("", 1);
       return;
     }
 
@@ -333,14 +439,14 @@ void HTTP_ContinueWriteSD() {
   CurrentHttpFile.sync();
   CurrentHttpFile.close();
   HTTPRespondNoContent();
-  
+
   CurrentHttpState = HTTPState_Init;
 }
 
 
 void HTTP_DeleteSD(char *filename) {
   SdFile file;
-  
+
   if (file.open(filename, O_WRONLY)) {
     file.remove();
     HTTPRespondNoContent();
@@ -351,13 +457,13 @@ void HTTP_DeleteSD(char *filename) {
 
 void HTTP_RebootApplication() {
   HTTPRespondNoContent();
-  CurrentHttpClient.stop();
+  client_close();
   asm volatile ("jmp 0x7C84");
 }
 
 void HTTP_RebootBootloader() {
   HTTPRespondNoContent();
-  CurrentHttpClient.stop();
+  client_close();
   asm volatile ("jmp 0x7C88");
 }
 
@@ -373,10 +479,10 @@ bool HTTPParseRequest(char *method, char *filename, int maxnamelen) {
   filename[0] = 0;
   method[0] = 0;
   val[0] = 0;
-  
+
   while (CurrentHttpClient.connected() && CurrentHttpClient.available()) {
-    char c = CurrentHttpClient.read();
-    
+    char c = client_read();
+
     if (c == '\n') {
       if (column == 0) {
         break;
@@ -401,7 +507,7 @@ bool HTTPParseRequest(char *method, char *filename, int maxnamelen) {
         iskey = false;
       }
     }
-    
+
     if (c != 0) {
       if (tokindex == 0 && clindex < 7) {
         method[clindex++] = c;
@@ -420,15 +526,15 @@ bool HTTPParseRequest(char *method, char *filename, int maxnamelen) {
       tokindex++;
       clindex = 0;
     }
-    
+
     lastc = c;
     column++;
   }
-  
+
   if (!authenticated && HTTP_AuthString[0] != 0) {
     HTTPRespondNeedAuth();
   }
-  
+
   return authenticated || HTTP_AuthString[0] == 0;
 }
 
@@ -445,18 +551,18 @@ void HTTPServer_loop() {
   */
   } else {
     if (CurrentHttpClient.connected()) {
-      CurrentHttpClient.stop();
+      client_close();
     }
 
     CurrentHttpClient = HttpServer.available();
-    
+
     if (CurrentHttpClient.connected()) {
       dbgbegin();
       dbgprint(F("Client connected"));
       dbgend();
       char method[8];
       char filename[32];
-      
+
       if (HTTPParseRequest(method, filename, 32)) {
         dbgbegin();
         dbgprint(F("Method: "));
@@ -501,7 +607,7 @@ void HTTPServer_loop() {
           HTTP_DeleteSD(filename);
           return;
         }
-        
+
         HTTPRespondNotFound();
       }
     }
@@ -510,7 +616,7 @@ void HTTPServer_loop() {
 
 void HTTPServer_init() {
   HttpServer.begin();
-  
+
   dbgbegin();
   dbgprint(F("HTTP Server started"));
   dbgend();
