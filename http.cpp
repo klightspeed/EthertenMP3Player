@@ -167,7 +167,7 @@ void HTTP_ListSDFilesJson() {
   strcpy_P(buf, PSTR("{\"mp3\":\""));
   strcat(buf, MP3_LoopFilename);
   strcat_P(buf, PSTR("\",\"pos\":\""));
-  itoa(MP3Player.currentPosition(), buf + strlen(buf), 10);
+  ltoa(MP3Player.currentPosition(), buf + strlen(buf), 10);
   strcat_P(buf, PSTR("\",\"files\":["));
 #else
   strcpy_P(buf, PSTR("{\"files\":["));
@@ -222,7 +222,7 @@ void HTTP_ListSDFilesJson() {
 
 void HTTP_PrintIndex() {
   HTTPRespondOK(F("text/html"));
-  client_write(F("<!DOCTYPE html>\n<html>\n<body>\n<script type=\"text/javascript\">\nfunction s(f,m,fl){\nvar r=new XMLHttpRequest();\nr.open(m,f['n'].value,0);\nr.send(fl);\nlocation.reload();\n}\nfunction p(f){\ns(f,'PUT',f['f'].files[0]);\n}\nfunction d(f){\ns(f,'DELETE','');\n}\nfunction l(){\nvar r=new XMLHttpRequest();\nr.open(\"GET\",\"/files\",0);\nr.send();\nvar fi=JSON.parse(r.responseText);\nvar w=function(c){document.write(c);};\nif('mp3' in fi){\nw('<p>Currently playing: <a href=\"'+fi.mp3+'\">'+fi.mp3+'</a></p><p>Current position: '+fi.pos+'s</p>');\n}\nw('<form><p>Upload:</p><p>File:<input type=\"file\" name=\"f\"/></p><p>Name:<input type=\"text\" name=\"n\"/></p><p><input type=\"button\" value=\"Upload\" onclick=\"p(this.form)\"/></p></form>');\nw('<table><tr><th>Name</th><th>Size</th><th>&nbsp;</th></tr><tr><td><a href=\"flash\">flash</a></td><td>32768</td><td>&nbsp;</td></tr>');\nfi.files.forEach(function(f){\nw('<tr><td><a href=\"'+f.name+'\">'+f.name+'</a></td><td>'+f.size+'</td><td><form><input type=\"hidden\" name=\"n\" value=\"'+f.name+'\"/><input type=\"button\" value=\"Delete\" onclick=\"d(this.form)\"/></form></td></tr>');\n});\nw('</table>');\n}\nl();\n</script>\n</body>\n</html>"));
+  client_write(F("<!DOCTYPE html>\n<html>\n<body>\n<script type=\"text/javascript\">\nfunction s(f,m,fl){\nvar r=new XMLHttpRequest();\nr.open(m,f['n'].value,0);\nr.send(fl);\nlocation.reload();\n}\nfunction p(f){\ns(f,'PUT',f['f'].files[0]);\n}\nfunction d(f){\ns(f,'DELETE','');\n}\nfunction l(){\nvar r=new XMLHttpRequest();\nr.open(\"GET\",\"/files\",0);\nr.send();\nvar fi=JSON.parse(r.responseText);\nvar w=function(c){document.write(c);};\nif('mp3' in fi){\nw('<p>Currently playing: <a href=\"'+fi.mp3+'\">'+fi.mp3+'</a></p><p>Current position: '+(fi.pos/1024)+'s</p>');\n}\nw('<form><p>Upload:</p><p>File:<input type=\"file\" name=\"f\"/></p><p>Name:<input type=\"text\" name=\"n\"/></p><p><input type=\"button\" value=\"Upload\" onclick=\"p(this.form)\"/></p></form>');\nw('<table><tr><th>Name</th><th>Size</th><th>&nbsp;</th></tr><tr><td><a href=\"flash\">flash</a></td><td>32768</td><td>&nbsp;</td></tr>');\nfi.files.forEach(function(f){\nw('<tr><td><a href=\"'+f.name+'\">'+f.name+'</a></td><td>'+f.size+'</td><td><form><input type=\"hidden\" name=\"n\" value=\"'+f.name+'\"/><input type=\"button\" value=\"Delete\" onclick=\"d(this.form)\"/></form></td></tr>');\n});\nw('</table>');\n}\nl();\n</script>\n</body>\n</html>"));
 }
 
 void HTTP_BeginReadSDRaw(char *filename) {
@@ -363,7 +363,7 @@ bool HTTPParseRequest(char *method, char *filename, int maxnamelen) {
   method[0] = 0;
   val[0] = 0;
 
-  while (CurrentHttpClient.connected() && CurrentHttpClient.available()) {
+  while (client_avail()) {
     char c = client_read();
 
     if (c == '\n') {
