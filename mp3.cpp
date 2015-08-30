@@ -1,5 +1,5 @@
 #include "config.h"
-#include <SFEMP3Shield.h>
+#include "SFEMP3Shield.h"
 #include "mp3.h"
 #include "debug.h"
 

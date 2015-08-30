@@ -1,6 +1,6 @@
-#include <SdFat.h>
-#include <Ethernet.h>
 #include "config.h"
+#include "SdFat.h"
+#include "Ethernet.h"
 #include "http.h"
 #include "mp3.h"
 #include "debug.h"

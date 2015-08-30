@@ -1,6 +1,6 @@
 #include "config.h"
-#include <SdFat.h>
-#include <EthernetUdp.h>
+#include "SdFat.h"
+#include "EthernetUdp.h"
 
 #ifdef USE_TFTP
 

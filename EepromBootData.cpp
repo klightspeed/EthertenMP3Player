@@ -1,7 +1,6 @@
-#include <Arduino.h>
-#include <EepromBootData.h>
 #include <avr/eeprom.h>
-
+#include "Arduino.h"
+#include "EepromBootData.h"
 
 EepromBootData::EepromBootData() {
     uint8_t *data = reinterpret_cast<uint8_t *>(this);
