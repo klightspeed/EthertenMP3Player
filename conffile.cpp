@@ -20,6 +20,29 @@ void parseIP(char *val, byte *ip) {
   }
 }
 
+void parseMAC(char *val, byte *mac) {
+  byte macbyte;
+  for (int i = 0; i < 6; i++) {
+    macbyte = 0;
+    while (*val < '0' || (*val > '9' && *val < 'A') || (*val > 'F' && *val < 'a') || *val > 'f') {
+      val++;
+    }
+    while ((*val >= '0' && *val <= '9') || (*val >= 'A' && *val <= 'F') || (*val >= 'a' && *val <= 'f')) {
+      byte nybble = 0;
+      if (*val >= '0' && *val <= '9') {
+        nybble = *val - '0';
+      } else if (*val >= 'A' && *val <= 'F') {
+        nybble = (*val - 'A') + 10;
+      } else if (*val >= 'a' && *val <= 'f') {
+        nybble = (*val - 'a') + 10;
+      }
+      macbyte = (macbyte * 16) + nybble;
+      val++;
+    }
+    *(mac++) = macbyte;
+  }
+}
+
 void parseConfig(EepromBootData &bootdata) {
   SdFile cfgfile;
   if (cfgfile.open("config.txt")) {
@@ -53,6 +76,8 @@ void parseConfig(EepromBootData &bootdata) {
 #endif
           } else if (!strcasecmp_P(key, PSTR("auth"))) {
             strcpy(HTTP_AuthString, val);
+	  } else if (!strcasecmp_P(key, PSTR("mac"))) {
+            parseMAC(val, bootdata.ifconfig.hwaddr);
           } else if (!strcasecmp_P(key, PSTR("ip"))) {
             parseIP(val, bootdata.ifconfig.ipaddr);
           } else if (!strcasecmp_P(key, PSTR("gw"))) {
