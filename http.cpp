@@ -158,6 +158,74 @@ void HTTPRespondBadRequest() {
   client_close();
 }
 
+void HTTP_ListSDFilesJson() {
+  char buf[64];
+  uint8_t bufpos = 0;
+  bool first = true;
+  HTTPRespondOK(F("application/json"));
+#ifdef USE_MP3
+  strcpy_P(buf, PSTR("{\"mp3\":\""));
+  strcat(buf, MP3_LoopFilename);
+  strcat_P(buf, PSTR("\",\"pos\":\""));
+  itoa(MP3Player.currentPosition(), buf + strlen(buf), 10);
+  strcat_P(buf, PSTR("\",\"files\":["));
+#else
+  strcpy_P(buf, PSTR("{\"files\":["));
+#endif
+  client_write(buf);
+
+  char filename[16];
+  dir_t p;
+
+  sd.vwd()->rewind();
+  while (sd.vwd()->readDir(&p) > 0) {
+    int pos = 0;
+    char *ext = NULL;
+    if (p.name[0] == DIR_NAME_FREE) break;
+    if (p.name[0] == DIR_NAME_DELETED || p.name[0] == '.') continue;
+    if (!DIR_IS_FILE(&p)) continue;
+
+    for (uint8_t i = 0; i < 11; i++) {
+      if (p.name[i] == ' ') continue;
+      if (i == 8) {
+        filename[pos++] = '.';
+      }
+      filename[pos++] = (char)p.name[i];
+    }
+
+    filename[pos] = 0;
+
+    buf[0] = 0;
+
+    if (!first) {
+      buf[0] = ',';
+      buf[1] = 0;
+    }
+
+    first = false;
+
+    strcat_P(buf, PSTR("{\"name\":\""));
+    strcat(buf, filename);
+    strcat_P(buf, PSTR("\",\"size\":"));
+    ltoa(p.fileSize, buf + strlen(buf), 10);
+    strcat_P(buf, PSTR("}"));
+
+    client_write(buf);
+  }
+
+  buf[0] = ']';
+  buf[1] = '}';
+  buf[2] = 0;
+
+  client_write(buf, 2);
+}
+
+void HTTP_PrintIndex() {
+  HTTPRespondOK(F("text/html"));
+  client_write(F("<!DOCTYPE html>\n<html>\n<body>\n<script type=\"text/javascript\">\nfunction s(f,m,fl){\nvar r=new XMLHttpRequest();\nr.open(m,f['n'].value,0);\nr.send(fl);\nlocation.reload();\n}\nfunction p(f){\ns(f,'PUT',f['f'].files[0]);\n}\nfunction d(f){\ns(f,'DELETE','');\n}\nfunction l(){\nvar r=new XMLHttpRequest();\nr.open(\"GET\",\"/files\",0);\nr.send();\nvar fi=JSON.parse(r.responseText);\nvar w=function(c){document.write(c);};\nif('mp3' in fi){\nw('<p>Currently playing: <a href=\"'+fi.mp3+'\">'+fi.mp3+'</a></p><p>Current position: '+fi.pos+'s</p>');\n}\nw('<form><p>Upload:</p><p>File:<input type=\"file\" name=\"f\"/></p><p>Name:<input type=\"text\" name=\"n\"/></p><p><input type=\"button\" value=\"Upload\" onclick=\"p(this.form)\"/></p></form>');\nw('<table><tr><th>Name</th><th>Size</th><th>&nbsp;</th></tr><tr><td><a href=\"flash\">flash</a></td><td>32768</td><td>&nbsp;</td></tr>');\nfi.files.forEach(function(f){\nw('<tr><td><a href=\"'+f.name+'\">'+f.name+'</a></td><td>'+f.size+'</td><td><form><input type=\"hidden\" name=\"n\" value=\"'+f.name+'\"/><input type=\"button\" value=\"Delete\" onclick=\"d(this.form)\"/></form></td></tr>');\n});\nw('</table>');\n}\nl();\n</script>\n</body>\n</html>"));
+}
+
+/*
 void HTML_WriteFileLink(char *filename, bool showdelete) {
   if (showdelete) {
     client_write(F("<form>"));
@@ -246,6 +314,7 @@ void HTTP_ListSDFiles() {
   }
   client_write(F("</ul></body></html>"));
 }
+ */
 
 /*
 void HTTP_BeginReadSDCmd(char *filename) {
@@ -573,11 +642,14 @@ void HTTPServer_loop() {
         if (!strcasecmp_P(method, PSTR("GET"))) {
           CurrentHttpClient.flush();
           if (filename[0] == 0) {
-            HTTP_ListSDFiles();
+            HTTP_PrintIndex();
             return;
           } else if (!strcasecmp_P(filename, PSTR("flash"))) {
             HTTP_BeginReadFlash();
             return;
+	  } else if (!strcasecmp_P(filename, PSTR("files"))) {
+	    HTTP_ListSDFilesJson();
+	    return;
           } else if (sd.exists(filename)) {
             /*
             if (!strcasecmp_P(filename + strlen(filename) - 4, PSTR(".cmd"))) {
