@@ -223,6 +223,9 @@ void EthernetUDP::flush()
 /* Start EthernetUDP socket, listening at local port PORT */
 uint8_t EthernetUDP::beginMulticast(IPAddress ip, uint16_t port)
 {
+#ifdef CONFIG_NOMCAST
+  return 0;
+#else
   if (_sock != MAX_SOCK_NUM)
     return 0;
 
@@ -251,6 +254,7 @@ uint8_t EthernetUDP::beginMulticast(IPAddress ip, uint16_t port)
   _remaining = 0;
   socket(_sock, SnMR::UDP, port, SnMR::MULTI);
   return 1;
+#endif
 }
 
 
