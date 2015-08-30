@@ -22,9 +22,19 @@
 SdFat sd;
 byte resetcause __attribute__((section(".noinit")));
 
-__attribute__((section(".init1"),naked))
-void __fill_resetcause(void) {
+__attribute__((section(".init1"),naked,used))
+static void __fill_resetcause(void) {
   __asm__ __volatile__ ("sts resetcause, r2");
+}
+
+__attribute__((section(".init3"),naked,used))
+static void __setup_ports(void) {
+  DDRB = 0;
+  DDRC = 0;
+  DDRD = 0;
+  PORTB = 0xFF;
+  PORTC = 0xFF;
+  PORTD = 0xFF;
 }
 
 void setup() {
