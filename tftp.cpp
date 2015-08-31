@@ -13,7 +13,6 @@ static uint16_t CurrentTftpPort;
 
 void TFTPReadSDFile(int blknum) {
   byte buf[64];
-  int len;
   int pos = 0;
   CurrentTftpClient.beginPacket(TftpServer.remoteIP(), TftpServer.remotePort());
   buf[0] = 0;
@@ -38,7 +37,6 @@ void TFTPReadSDFile(int blknum) {
 
 void TFTPReadFlash(int blknum) {
   byte buf[64];
-  int len;
   int pos = 0;
   CurrentTftpClient.beginPacket(TftpServer.remoteIP(), TftpServer.remotePort());
   buf[0] = 0;
@@ -141,12 +139,12 @@ void TFTPServer_loop() {
 
   if (pktsize != 0 && pktsize < 64) {
     char *filename;
-    char *tftpmode;
+    //char *tftpmode;
     TftpServer.read(buf, 64);
     if (buf[0] == 0) {
       if (buf[1] == 1 || buf[1] == 2) {
         filename = (char *)(buf + 2);
-        tftpmode = (char *)(buf + 3 + strlen(filename));
+        //tftpmode = (char *)(buf + 3 + strlen(filename));
         filename[15] = 0;
         tftpfile.close();
         if (TFTPOpen(buf[1], filename)) {

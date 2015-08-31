@@ -28,10 +28,10 @@ static byte recvbufpos;
 static inline size_t client_write(const __FlashStringHelper *data, size_t len) {
   if (len > 64) {
     char _data[64];
-    int ret = 0;
+    size_t ret = 0;
     while (ret < len) {
-      int _len = len - ret;
-      int _retlen;
+      size_t _len = len - ret;
+      size_t _retlen;
 
       if (_len > 64) {
         _len = 64;
@@ -77,12 +77,12 @@ static inline size_t client_write(unsigned int val) {
 }
 
 static size_t client_read(char *data, size_t len) {
-  int pos = 0;
+  size_t pos = 0;
 
   if (recvbufpos < recvbuflen) {
     pos = len;
 
-    if (pos > (recvbuflen - recvbufpos)) {
+    if (pos > (size_t)(recvbuflen - recvbufpos)) {
       pos = recvbuflen - recvbufpos;
     }
 
@@ -160,7 +160,6 @@ void HTTPRespondBadRequest() {
 
 void HTTP_ListSDFilesJson() {
   char buf[64];
-  uint8_t bufpos = 0;
   bool first = true;
   HTTPRespondOK(F("application/json"));
 #ifdef USE_MP3
@@ -180,7 +179,6 @@ void HTTP_ListSDFilesJson() {
   sd.vwd()->rewind();
   while (sd.vwd()->readDir(&p) > 0) {
     int pos = 0;
-    char *ext = NULL;
     if (p.name[0] == DIR_NAME_FREE) break;
     if (p.name[0] == DIR_NAME_DELETED || p.name[0] == '.') continue;
     if (!DIR_IS_FILE(&p)) continue;
