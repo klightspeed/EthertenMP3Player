@@ -220,7 +220,44 @@ void HTTP_ListSDFilesJson() {
 
 void HTTP_PrintIndex() {
   HTTPRespondOK(F("text/html"));
-  client_write(F("<!DOCTYPE html>\n<html>\n<body>\n<script type=\"text/javascript\">\nfunction s(f,m,fl){\nvar r=new XMLHttpRequest();\nr.open(m,f['n'].value,0);\nr.send(fl);\nlocation.reload();\n}\nfunction p(f){\ns(f,'PUT',f['f'].files[0]);\n}\nfunction d(f){\ns(f,'DELETE','');\n}\nfunction l(){\nvar r=new XMLHttpRequest();\nr.open(\"GET\",\"/files\",0);\nr.send();\nvar fi=JSON.parse(r.responseText);\nvar w=function(c){document.write(c);};\nif('mp3' in fi){\nw('<p>Currently playing: <a href=\"'+fi.mp3+'\">'+fi.mp3+'</a></p><p>Current position: '+(fi.pos/1024)+'s</p>');\n}\nw('<form><p>Upload:</p><p>File:<input type=\"file\" name=\"f\"/></p><p>Name:<input type=\"text\" name=\"n\"/></p><p><input type=\"button\" value=\"Upload\" onclick=\"p(this.form)\"/></p></form>');\nw('<table><tr><th>Name</th><th>Size</th><th>&nbsp;</th></tr><tr><td><a href=\"flash\">flash</a></td><td>32768</td><td>&nbsp;</td></tr>');\nfi.files.forEach(function(f){\nw('<tr><td><a href=\"'+f.name+'\">'+f.name+'</a></td><td>'+f.size+'</td><td><form><input type=\"hidden\" name=\"n\" value=\"'+f.name+'\"/><input type=\"button\" value=\"Delete\" onclick=\"d(this.form)\"/></form></td></tr>');\n});\nw('</table>');\n}\nl();\n</script>\n</body>\n</html>"));
+  client_write(F(
+   "<!DOCTYPE html>"
+   "<html>"
+    "<body>"
+     "<script type=\"text/javascript\">"
+      "function s(f,m,fl){"
+       "var r=new XMLHttpRequest();"
+       "r.open(m,f['n'].value,1);"
+       "r.onload=function(){location.reload();};"
+       "r.send(fl);"
+      "}"
+      "function p(f){"
+       "s(f,'PUT',f['f'].files[0]);"
+      "}"
+      "function d(f){"
+       "s(f,'DELETE','');"
+      "}"
+      "function l(){"
+       "var r=new XMLHttpRequest();"
+       "r.open(\"GET\",\"/files\",0);"
+       "r.send();"
+       "var fi=JSON.parse(r.responseText);"
+       "var w=function(c){document.write(c);};"
+       "if('mp3' in fi){"
+        "w('<p>Currently playing: <a href=\"'+fi.mp3+'\">'+fi.mp3+'</a></p><p>Current position: '+(fi.pos/1024)+'s</p>');"
+       "}"
+       "w('<form><p>Upload:</p><p>File:<input type=\"file\" name=\"f\"/></p><p>Name:<input type=\"text\" name=\"n\"/></p><p><input type=\"button\" value=\"Upload\" onclick=\"p(this.form)\"/></p></form>');"
+       "w('<table><tr><th>Name</th><th>Size</th><th>&nbsp;</th></tr><tr><td><a href=\"flash\">flash</a></td><td>32768</td><td>&nbsp;</td></tr>');"
+       "fi.files.forEach(function(f){"
+        "w('<tr><td><a href=\"'+f.name+'\">'+f.name+'</a></td><td>'+f.size+'</td><td><form><input type=\"hidden\" name=\"n\" value=\"'+f.name+'\"/><input type=\"button\" value=\"Delete\" onclick=\"d(this.form)\"/></form></td></tr>');"
+       "});"
+       "w('</table>');"
+      "}"
+      "l();"
+     "</script>"
+    "</body>"
+   "</html>"
+  ));
 }
 
 void HTTP_BeginReadSDRaw(char *filename) {
