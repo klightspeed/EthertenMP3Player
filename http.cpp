@@ -24,6 +24,7 @@ char HTTP_AuthString[32];
 static char recvbuf[128];
 static byte recvbuflen;
 static byte recvbufpos;
+static uint32_t HttpContentLength;
 
 static inline size_t client_write(const __FlashStringHelper *data, size_t len) {
   if (len > 64) {
@@ -325,6 +326,7 @@ void HTTP_BeginWriteSD(char *filename) {
   CurrentHttpFile = SdFile();
   if (CurrentHttpFile.open(filename, O_WRONLY | O_CREAT | O_TRUNC)) {
     CurrentHttpState = HTTPState_WriteSD;
+    CurrentHttpPosition = 0;
   } else {
     HTTPRespondBadRequest();
   }
@@ -340,6 +342,7 @@ void HTTP_ContinueWriteSD() {
     if ((len = client_read((char *)buf, 64)) > 0) {
       CurrentHttpFile.write(buf, len);
       pos += len;
+      CurrentHttpPosition += len;
       lastread = millis();
     }
 
@@ -350,6 +353,10 @@ void HTTP_ContinueWriteSD() {
     }
 
     if (millis() - lastread > 1024) {
+      break;
+    }
+
+    if (CurrentHttpPosition >= HttpContentLength) {
       break;
     }
   }
@@ -398,6 +405,8 @@ bool HTTPParseRequest(char *method, char *filename, int maxnamelen) {
   method[0] = 0;
   val[0] = 0;
 
+  HttpContentLength = 0xFFFFFFFF;
+
   while (client_avail()) {
     char c = client_read();
 
@@ -410,6 +419,8 @@ bool HTTPParseRequest(char *method, char *filename, int maxnamelen) {
           if (!strcmp(val, HTTP_AuthString)) {
             authenticated = true;
           }
+        } else if (!strcasecmp_P(key, PSTR("Content-Length"))) {
+          HttpContentLength = atol(val);
         }
       }
       tokindex = 2;
