@@ -111,11 +111,34 @@ class VS1053ReaderBase {
         void *reader;
 };
 
+template <typename T, int F (uint8_t[], int, T&)>
+class VS1053ReaderFunctor : VS1053ReaderBase {
+    public:
+        VS1053ReaderFunctor(T &instance) {
+            reader = reinterpret_cast<void *>(&instance);
+        }
+
+        virtual int read(uint8_t buf[], int len) {
+            return F(buf, len, getinstance());
+        }
+
+    private:
+        T &getinstance() {
+            return *reinterpret_cast<T *>(reader);
+        }
+};
+
+// TReader should be a functor with the following prototype:
+//
+// class TReader {
+//     public:
+//         int operator()(uint8_t buf[], int len);
+// }
 template <typename TReader>
 class VS1053Reader : public VS1053ReaderBase {
     public:
-        VS1053Reader(TReader *reader) {
-            reader = reinterpret_cast<void *>(reader);
+        VS1053Reader(TReader &reader) {
+            reader = reinterpret_cast<void *>(&reader);
         }
 
         virtual int read(uint8_t buf[], int len) {
@@ -188,7 +211,13 @@ class VS1053Base {
 
         template <typename TReader>
         uint8_t begin_play_track(TReader &reader) {
-            VS1053Reader<TReader> vsreader(&reader);
+            VS1053Reader<TReader> vsreader(reader);
+            return begin_play_track(vsreader);
+        }
+
+        template <typename T, int F (uint8_t[], int, T&)>
+        uint8_t begin_play_track(T &instance) {
+            VS1053ReaderFunctor<T, F> vsreader(instance);
             return begin_play_track(vsreader);
         }
 
@@ -198,11 +227,24 @@ class VS1053Base {
             return continue_play_track(vsreader);
         }
 
+        template <typename T, int F (uint8_t[], int, T&)>
+        uint8_t continue_play_track(T &instance) {
+            VS1053ReaderFunctor<T, F> vsreader(instance);
+            return continue_play_track(vsreader);
+        }
+
         template <typename TReader>
         uint8_t apply_patch(TReader &reader) {
             VS1053Reader<TReader> vsreader(&reader);
             return apply_patch(vsreader);
         }
+
+        template <typename T, int F (uint8_t[], int, T&)>
+        uint8_t apply_patch(T &instance) {
+            VS1053ReaderFunctor<T, F> vsreader(instance);
+            return apply_patch(vsreader);
+        }
+
     protected:
         void cs_assert() { PORT_CLR(VS1053_XCS); }
         void cs_deassert() { PORT_SET(VS1053_XCS); }
