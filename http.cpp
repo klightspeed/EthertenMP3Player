@@ -1,6 +1,8 @@
 #include "config.h"
 #include "SdFat.h"
+#include "SPI.h"
 #include "Ethernet.h"
+#include "utility/w5100.h"
 #include "http.h"
 #include "mp3.h"
 #include "debug.h"
@@ -337,6 +339,7 @@ void HTTP_ContinueWriteSD() {
   int len;
   int pos = 0;
   uint32_t lastread = millis();
+  static byte readretry;
 
   while (CurrentHttpClient.connected()) {
     if ((len = client_read((char *)buf, 64)) > 0) {
@@ -344,16 +347,21 @@ void HTTP_ContinueWriteSD() {
       pos += len;
       CurrentHttpPosition += len;
       lastread = millis();
+      readretry = 0;
     }
 
-    if (pos >= 512 || millis() - lastread >= 10) {
-      // keepalive
-      client_write("", 1);
+    if (pos >= 512) {
+      // ACK
+      client_write("", 0);
       return;
     }
 
-    if (millis() - lastread > 1024) {
-      break;
+    if (millis() - lastread > 128) {
+      if (readretry++ >= 16) {
+        break;
+      } else {
+        return;
+      }
     }
 
     if (CurrentHttpPosition >= HttpContentLength) {
