@@ -12,8 +12,16 @@ $(SUBDIRS):
 lib%.a: %
 	cp -a $</$@ $@
 
+%.h: %.html.gz
+	python bin2h.py $@ $< $*
+
+%.gz: %
+	gzip <$< >$@
+
+http.o: http.cpp http.h http_index.h
+
 include avr.mk
 
 CPPFLAGS += -ISPI -ISFEMP3Shield -Iarduino/core -Iarduino/variants/standard -IEthernet/src -ISdFat
-CLEAN_FILES += $(SUBDIRS:%=lib%.a)
+CLEAN_FILES += $(SUBDIRS:%=lib%.a) http_index.h
 
