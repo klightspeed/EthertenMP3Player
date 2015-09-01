@@ -114,7 +114,7 @@ class VS1053ReaderBase {
 template <typename T, int F (uint8_t[], int, T&)>
 class VS1053ReaderFunctor : VS1053ReaderBase {
     public:
-        VS1053ReaderFunctor(T &instance) {
+        inline VS1053ReaderFunctor(T &instance) {
             reader = reinterpret_cast<void *>(&instance);
         }
 
@@ -123,7 +123,7 @@ class VS1053ReaderFunctor : VS1053ReaderBase {
         }
 
     private:
-        T &getinstance() {
+        inline T &getinstance() {
             return *reinterpret_cast<T *>(reader);
         }
 };
@@ -137,7 +137,7 @@ class VS1053ReaderFunctor : VS1053ReaderBase {
 template <typename TReader>
 class VS1053Reader : public VS1053ReaderBase {
     public:
-        VS1053Reader(TReader &reader) {
+        inline VS1053Reader(TReader &reader) {
             reader = reinterpret_cast<void *>(&reader);
         }
 
@@ -146,7 +146,7 @@ class VS1053Reader : public VS1053ReaderBase {
         }
 
     private:
-        TReader &getreader() {
+        inline TReader &getreader() {
             return *reinterpret_cast<TReader *>(reader);
         }
 };
@@ -162,98 +162,90 @@ class VS1053Base {
         void stoptrack();
         uint8_t apply_patch(VS1053ReaderBase &reader);
 
-        VS1053_State get_state() const { return state; }
-        bool isplaying() const { return (state == playback || state == paused_playback); }
-        void set_volume(uint8_t left, uint8_t right) { register_write(VS1053_SCI_VOL, left, right); }
-        void set_volume(uint8_t vol) { set_volume(vol, vol); }
-        void set_volume(uint16_t vol) { register_write(VS1053_SCI_VOL, vol); }
-        uint16_t get_treble_frequency() { return get_bass_treble().Treble_Freqlimit * 1000; }
-        int8_t get_treble_amplitude() { return get_bass_treble().Treble_Amplitude; }
-        uint16_t get_bass_frequency() { return get_bass_treble().Bass_Freqlimit * 10; }
-        uint8_t get_bass_amplitude() { return get_bass_treble().Bass_Amplitude; }
-        void set_treble_frequency(uint16_t freq) { SET_BASS_TREBLE(Treble_Freqlimit, freq / 1000, 1, 15); }
-        void set_treble_amplitude(int8_t amp) { SET_BASS_TREBLE(Treble_Amplitude, amp, -8, 7); }
-        void set_bass_frequency(uint16_t freq) { SET_BASS_TREBLE(Bass_Freqlimit, freq / 10, 2, 15); }
-        void set_bass_amplitude(uint8_t amp) { SET_BASS_TREBLE(Bass_Amplitude, amp, 0, 15); }
-        uint16_t get_play_speed() { return wram_read(VS1053_para_playSpeed); }
-        void set_play_speed(uint16_t data) { wram_write(VS1053_para_playSpeed, data); }
-        void pause_playback() { if (isplaying()) state = paused_playback; }
-        void resume_playback() { if (isplaying()) state = playback; }
-        uint16_t get_mode() { return register_read(VS1053_SCI_MODE); }
-        void set_mode(uint16_t val) { register_write(VS1053_SCI_MODE, val); }
-        void set_mode(uint16_t mask, uint8_t val) { set_mode((get_mode() & ~mask) | (val ? mask : 0)); }
-        uint16_t get_position() { return register_read(VS1053_SCI_DECODE_TIME); }
-        uint8_t get_vumeter() { return !!(register_read(VS1053_SCI_STATUS) & VS1053_SS_VU_ENABLE); }
-        void set_vumeter(uint8_t enable) { register_write(VS1053_SCI_STATUS, (register_read(VS1053_SCI_STATUS) & ~VS1053_SS_VU_ENABLE) | (enable ? VS1053_SS_VU_ENABLE : 0)); }
-        uint16_t get_vulevel() { return register_read(VS1053_SCI_AICTRL3); }
-        uint8_t get_diff_output() { return !!(get_mode() & VS1053_SM_DIFF); }
-        void set_diff_output(uint8_t val) { set_mode(VS1053_SM_DIFF, val); }
-        uint8_t get_mono_mode() { return wram_read(VS1053_para_MonoOutput) & 1; }
-        void set_mono_mode(uint8_t stereo) { wram_write(VS1053_para_MonoOutput, (wram_read(VS1053_para_MonoOutput) & 0xFFFE) | stereo ? 1 : 0); }
+        inline VS1053_State get_state() const { return state; }
+        inline bool isplaying() const { return (state == playback || state == paused_playback); }
+        inline void set_volume(uint8_t left, uint8_t right) { register_write(VS1053_SCI_VOL, left, right); }
+        inline void set_volume(uint8_t vol) { set_volume(vol, vol); }
+        inline void set_volume(uint16_t vol) { register_write(VS1053_SCI_VOL, vol); }
+        inline uint16_t get_treble_frequency() { return get_bass_treble().Treble_Freqlimit * 1000; }
+        inline int8_t get_treble_amplitude() { return get_bass_treble().Treble_Amplitude; }
+        inline uint16_t get_bass_frequency() { return get_bass_treble().Bass_Freqlimit * 10; }
+        inline uint8_t get_bass_amplitude() { return get_bass_treble().Bass_Amplitude; }
+        inline void set_treble_frequency(uint16_t freq) { SET_BASS_TREBLE(Treble_Freqlimit, freq / 1000, 1, 15); }
+        inline void set_treble_amplitude(int8_t amp) { SET_BASS_TREBLE(Treble_Amplitude, amp, -8, 7); }
+        inline void set_bass_frequency(uint16_t freq) { SET_BASS_TREBLE(Bass_Freqlimit, freq / 10, 2, 15); }
+        inline void set_bass_amplitude(uint8_t amp) { SET_BASS_TREBLE(Bass_Amplitude, amp, 0, 15); }
+        inline uint16_t get_play_speed() { return wram_read(VS1053_para_playSpeed); }
+        inline void set_play_speed(uint16_t data) { wram_write(VS1053_para_playSpeed, data); }
+        inline void pause_playback() { if (isplaying()) state = paused_playback; }
+        inline void resume_playback() { if (isplaying()) state = playback; }
+        inline uint16_t get_mode() { return register_read(VS1053_SCI_MODE); }
+        inline void set_mode(uint16_t val) { register_write(VS1053_SCI_MODE, val); }
+        inline void set_mode(uint16_t mask, uint8_t val) { set_mode((get_mode() & ~mask) | (val ? mask : 0)); }
+        inline uint16_t get_position() { return register_read(VS1053_SCI_DECODE_TIME); }
+        inline uint8_t get_vumeter() { return !!(register_read(VS1053_SCI_STATUS) & VS1053_SS_VU_ENABLE); }
+        inline void set_vumeter(uint8_t enable) { register_write(VS1053_SCI_STATUS, (register_read(VS1053_SCI_STATUS) & ~VS1053_SS_VU_ENABLE) | (enable ? VS1053_SS_VU_ENABLE : 0)); }
+        inline uint16_t get_vulevel() { return register_read(VS1053_SCI_AICTRL3); }
+        inline uint8_t get_diff_output() { return !!(get_mode() & VS1053_SM_DIFF); }
+        inline void set_diff_output(uint8_t val) { set_mode(VS1053_SM_DIFF, val); }
+        inline uint8_t get_mono_mode() { return wram_read(VS1053_para_MonoOutput) & 1; }
+        inline void set_mono_mode(uint8_t stereo) { wram_write(VS1053_para_MonoOutput, (wram_read(VS1053_para_MonoOutput) & 0xFFFE) | stereo ? 1 : 0); }
 
-        uint8_t get_earspeaker() {
+        inline uint8_t get_earspeaker() {
             uint16_t mode = get_mode();
             return ((mode & VS1053_SM_EARSPEAKER_LO) ? 1 : 0) |
                    ((mode & VS1053_SM_EARSPEAKER_HI) ? 2 : 0);
         }
 
-        void set_earspeaker(uint8_t val) {
+        inline void set_earspeaker(uint8_t val) {
             uint16_t mode = get_mode() & ~(VS1053_SM_EARSPEAKER_LO | VS1053_SM_EARSPEAKER_HI);
             mode |= ((val & 1) ? VS1053_SM_EARSPEAKER_LO : 0) | ((val & 2) ? VS1053_SM_EARSPEAKER_HI : 0);
             set_mode(mode);
         }
 
-        union VS1053_BassTreble get_bass_treble() {
+        inline union VS1053_BassTreble get_bass_treble() {
             union VS1053_BassTreble basstreb;
             basstreb.word = register_read(VS1053_SCI_BASS);
             return basstreb;
         }
 
         template <typename TReader>
-        uint8_t begin_play_track(TReader &reader) {
+        inline uint8_t begin_play_track(TReader &reader) {
             VS1053Reader<TReader> vsreader(reader);
             return begin_play_track(vsreader);
         }
 
         template <typename T, int F (uint8_t[], int, T&)>
-        uint8_t begin_play_track(T &instance) {
+        inline uint8_t begin_play_track(T &instance) {
             VS1053ReaderFunctor<T, F> vsreader(instance);
             return begin_play_track(vsreader);
         }
 
         template <typename TReader>
-        uint8_t continue_play_track(TReader &reader) {
+        inline uint8_t continue_play_track(TReader &reader) {
             VS1053Reader<TReader> vsreader(&reader);
             return continue_play_track(vsreader);
         }
 
         template <typename T, int F (uint8_t[], int, T&)>
-        uint8_t continue_play_track(T &instance) {
+        inline uint8_t continue_play_track(T &instance) {
             VS1053ReaderFunctor<T, F> vsreader(instance);
             return continue_play_track(vsreader);
         }
 
         template <typename TReader>
-        uint8_t apply_patch(TReader &reader) {
+        inline uint8_t apply_patch(TReader &reader) {
             VS1053Reader<TReader> vsreader(&reader);
             return apply_patch(vsreader);
         }
 
         template <typename T, int F (uint8_t[], int, T&)>
-        uint8_t apply_patch(T &instance) {
+        inline uint8_t apply_patch(T &instance) {
             VS1053ReaderFunctor<T, F> vsreader(instance);
             return apply_patch(vsreader);
         }
 
     protected:
-        void cs_assert() { PORT_CLR(VS1053_XCS); }
-        void cs_deassert() { PORT_SET(VS1053_XCS); }
-        void dcs_assert() { PORT_CLR(VS1053_XDCS); }
-        void dcs_deassert() { PORT_SET(VS1053_XDCS); }
-        void reset_assert() { PORT_CLR(VS1053_RESET); }
-        void reset_deassert() { PORT_SET(VS1053_RESET); }
-        uint8_t dreq() { return PIN_VAL(VS1053_DREQ); }
-
         void fillend(uint8_t fillbyte, int len);
         void flush_cancel(VS1053_Flush flushtype);
         void register_write(uint8_t reg, uint8_t hi, uint8_t lo);
@@ -261,14 +253,14 @@ class VS1053Base {
         void wram_write(uint16_t addr, uint16_t data);
         uint16_t wram_read(uint16_t addr);
 
-        void register_write(uint8_t reg, uint16_t val) {
+        inline void register_write(uint8_t reg, uint16_t val) {
             union twobyte v;
             v.word = val;
             register_write(reg, v.byte[1], v.byte[0]);
         }
 
         VS1053_State state;
-        uint8_t spi_divisor;
+        uint16_t spi_param;
 };
 
 #endif /* VS1053_H_ */

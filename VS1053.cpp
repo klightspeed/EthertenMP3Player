@@ -9,6 +9,17 @@
  * https://github.com/madsci1016/Sparkfun-MP3-Player-Shield-Arduino-Library
  */
 
+#define spi_setup() spi_spi0_setup_param(spi_param)
+#define set_divisor(div) do { spi_param = spi_spi0_calcparam(div); } while (0)
+#define spi_transfer(val) spi_spi0_transfer(val)
+#define cs_assert() PORT_CLR(VS1053_XCS)
+#define cs_deassert() PORT_SET(VS1053_XCS)
+#define dcs_assert() PORT_CLR(VS1053_XDCS)
+#define dcs_deassert() PORT_SET(VS1053_XDCS)
+#define reset_assert() PORT_CLR(VS1053_RESET)
+#define reset_deassert() PORT_SET(VS1053_RESET)
+#define dreq() PIN_VAL(VS1053_DREQ)
+
 uint8_t VS1053Base::begin() {
     DDR_IN(VS1053_DREQ);
     DDR_OUT(VS1053_XCS);
@@ -49,7 +60,7 @@ uint8_t VS1053Base::vs_init() {
     _delay_ms(100);
     reset_deassert();
 
-    spi_divisor = 32;
+    set_divisor(32);
     _delay_ms(10);
 
     uint16_t mp3mode = register_read(VS1053_SCI_MODE);
@@ -60,7 +71,7 @@ uint8_t VS1053Base::vs_init() {
 
     register_write(VS1053_SCI_CLOCKF, 0x6000);
 
-    spi_divisor = 4;
+    set_divisor(4);
 
     _delay_ms(10);
 
@@ -156,10 +167,10 @@ uint8_t VS1053Base::continue_play_track(VS1053ReaderBase &reader) {
 
         dcs_assert();
 
-        spi_spi0_setup(spi_divisor, true);
+        spi_setup();
 
         for (uint8_t i = 0; i < len; i++) {
-            spi_spi0_transfer(buf[i]);
+            spi_transfer(buf[i]);
         }
 
         dcs_deassert();
@@ -173,7 +184,7 @@ void VS1053Base::fillend(uint8_t fillbyte, int len) {
 
     for (int i = 0; i < len; i++) {
         while (!dreq());
-        spi_spi0_transfer(fillbyte);
+        spi_transfer(fillbyte);
     }
 
     dcs_deassert();
@@ -182,7 +193,7 @@ void VS1053Base::fillend(uint8_t fillbyte, int len) {
 void VS1053Base::flush_cancel(VS1053_Flush flushtype) {
     uint8_t fillbyte = (uint8_t)(wram_read(VS1053_para_endFillByte) & 0xFF);
 
-    spi_spi0_setup(spi_divisor, true);
+    spi_setup();
 
     if (flushtype == post || flushtype == both) {
         fillend(fillbyte, 2052);
@@ -217,11 +228,11 @@ void VS1053Base::register_write(uint8_t reg, uint8_t hi, uint8_t lo) {
 
     cs_assert();
 
-    spi_spi0_setup(spi_divisor, true);
-    spi_spi0_transfer(0x02);
-    spi_spi0_transfer(reg);
-    spi_spi0_transfer(hi);
-    spi_spi0_transfer(lo);
+    spi_setup();
+    spi_transfer(0x02);
+    spi_transfer(reg);
+    spi_transfer(hi);
+    spi_transfer(lo);
 
     while (!dreq());
 
@@ -239,13 +250,13 @@ uint16_t VS1053Base::register_read(uint8_t reg) {
 
     cs_assert();
 
-    spi_spi0_setup(spi_divisor, true);
-    spi_spi0_transfer(0x03);
-    spi_spi0_transfer(reg);
+    spi_setup();
+    spi_transfer(0x03);
+    spi_transfer(reg);
 
-    v.byte[1] = spi_spi0_transfer(0xFF);
+    v.byte[1] = spi_transfer(0xFF);
     while (!dreq());
-    v.byte[0] = spi_spi0_transfer(0xFF);
+    v.byte[0] = spi_transfer(0xFF);
     while (!dreq());
 
     cs_deassert();
