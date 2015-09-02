@@ -303,6 +303,7 @@ void HTTP_ContinueWriteSD() {
   int len;
   int pos = 0;
   uint32_t lastread = millis();
+  static bool acksent;
   static byte readretry;
 
   while (CurrentHttpClient.connected()) {
@@ -312,24 +313,28 @@ void HTTP_ContinueWriteSD() {
       CurrentHttpPosition += len;
       lastread = millis();
       readretry = 0;
-    }
+      acksent = false;
 
-    if (pos >= 512) {
-      // ACK
-      client_write("", 0);
-      return;
-    }
-
-    if (millis() - lastread > 128) {
-      if (readretry++ >= 16) {
-        break;
-      } else {
+      if (pos >= 512) {
         return;
       }
-    }
+    } else {
+      if (!acksent) {
+        client_write((const char *)buf, 0);
+        acksent = true;
+      }
 
-    if (CurrentHttpPosition >= HttpContentLength) {
-      break;
+      if (CurrentHttpPosition >= HttpContentLength) {
+        break;
+      }
+
+      if (millis() - lastread > 32) {
+        if (readretry++ >= 64) {
+          break;
+        } else {
+          return;
+        }
+      }
     }
   }
 
