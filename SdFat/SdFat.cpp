@@ -20,10 +20,10 @@
 #include <SdFat.h>
 //------------------------------------------------------------------------------
 #if USE_SERIAL_FOR_STD_OUT || !defined(UDR0)
-Print* SdFat::m_stdOut = &Serial;
+//Print* SdFat::m_stdOut = &Serial;
 #else  // USE_SERIAL_FOR_STD_OUT
 #include <MinimumSerial.h>
-Print* SdFat::m_stdOut = &MiniSerial;
+//Print* SdFat::m_stdOut = &MiniSerial;
 #endif  // USE_SERIAL_FOR_STD_OUT
 //------------------------------------------------------------------------------
 /**
@@ -127,7 +127,7 @@ bool SdFat::exists(const char* name) {
  * LS_R - Recursive list of subdirectories.
  */
 void SdFat::ls(uint8_t flags) {
-  m_vwd.ls(m_stdOut, flags);
+  //m_vwd.ls(m_stdOut, flags);
 }
 //------------------------------------------------------------------------------
 /** List the directory contents of the volume working directory.

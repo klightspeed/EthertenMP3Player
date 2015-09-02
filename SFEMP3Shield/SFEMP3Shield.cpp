@@ -138,7 +138,7 @@ uint8_t  SFEMP3Shield::begin() {
  If you are using SdFat objects other than "sd" the below may be omitted.
  or whant to save 222 bytes of Flash space.
  */
-#if (1)
+#if (0)
 if (int8_t(sd.vol()->fatType()) == 0) {
   Serial.println(F("If you get this error, you likely do not have a sd.begin in the main sketch, See Trouble Shooting Guide!"));
   Serial.println(F("http://mpflaga.github.com/Sparkfun-MP3-Player-Shield-Arduino-Library/#Troubleshooting"));
@@ -390,7 +390,7 @@ uint8_t SFEMP3Shield::VSLoadUserCode(char* fileName){
 uint8_t SFEMP3Shield::enableTestSineWave(uint8_t freq) {
 
   if(isPlaying() || !PIN_VAL(MP3_RESET)) {
-    Serial.println(F("Warning Tests are not available."));
+    //Serial.println(F("Warning Tests are not available."));
     return -1;
   }
 
@@ -441,7 +441,7 @@ uint8_t SFEMP3Shield::enableTestSineWave(uint8_t freq) {
 uint8_t SFEMP3Shield::disableTestSineWave() {
 
   if(isPlaying() || !PIN_VAL(MP3_RESET)) {
-    Serial.println(F("Warning Tests are not available."));
+    //Serial.println(F("Warning Tests are not available."));
     return -1;
   }
 
@@ -496,7 +496,7 @@ uint8_t SFEMP3Shield::disableTestSineWave() {
 uint16_t SFEMP3Shield::memoryTest() {
 
   if(isPlaying() || !PIN_VAL(MP3_RESET)) {
-    Serial.println(F("Warning Tests are not available."));
+    //Serial.println(F("Warning Tests are not available."));
     return -1;
   }
 
@@ -1506,6 +1506,7 @@ void SFEMP3Shield::getAudioInfo() {
   // already disabled in Mp3ReadRegister function
   //pauseDataStream();
 
+  /*
   Serial.print(F("HDAT1"));
   Serial.print(F("\tHDAT0"));
   Serial.print(F("\tVOL"));
@@ -1568,6 +1569,7 @@ void SFEMP3Shield::getAudioInfo() {
   Serial.print(currentPosition(), DEC);
 
   Serial.println();
+  */
 }
 
 //------------------------------------------------------------------------------
