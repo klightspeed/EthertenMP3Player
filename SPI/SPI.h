@@ -15,6 +15,7 @@
 #define _SPI_H_INCLUDED
 
 #include <Arduino.h>
+#include "ports.h"
 
 // SPI_HAS_TRANSACTION means SPI has beginTransaction(), endTransaction(),
 // usingInterrupt(), and SPISetting(clock, bitOrder, dataMode)
@@ -194,8 +195,8 @@ public:
 
     #ifdef SPI_TRANSACTION_MISMATCH_LED
     if (inTransactionFlag) {
-      pinMode(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
-      digitalWrite(SPI_TRANSACTION_MISMATCH_LED, HIGH);
+      PORT_MODE(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
+      PORT_WRITE(SPI_TRANSACTION_MISMATCH_LED, HIGH);
     }
     inTransactionFlag = 1;
     #endif
@@ -260,8 +261,8 @@ public:
   inline static void endTransaction(void) {
     #ifdef SPI_TRANSACTION_MISMATCH_LED
     if (!inTransactionFlag) {
-      pinMode(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
-      digitalWrite(SPI_TRANSACTION_MISMATCH_LED, HIGH);
+      PORT_MODE(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
+      PORT_WRITE(SPI_TRANSACTION_MISMATCH_LED, HIGH);
     }
     inTransactionFlag = 0;
     #endif

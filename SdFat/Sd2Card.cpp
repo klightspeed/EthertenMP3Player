@@ -19,6 +19,7 @@
  */
 #include <Sd2Card.h>
 #include <SdSpi.h>
+#include "ports.h"
 // debug trace macro
 #define SD_TRACE(m, b)
 // #define SD_TRACE(m, b) Serial.print(m);Serial.println(b);
@@ -178,14 +179,14 @@ uint32_t Sd2Card::cardSize() {
 }
 //------------------------------------------------------------------------------
 void Sd2Card::chipSelectHigh() {
-  digitalWrite(m_chipSelectPin, HIGH);
+  PORT_WRITE(m_chipSelectPin, HIGH);
   // insure MISO goes high impedance
   m_spi.send(0XFF);
 }
 //------------------------------------------------------------------------------
 void Sd2Card::chipSelectLow() {
   m_spi.init(m_sckDivisor);
-  digitalWrite(m_chipSelectPin, LOW);
+  PORT_WRITE(m_chipSelectPin, LOW);
 }
 //------------------------------------------------------------------------------
 /** Erase a range of blocks.
@@ -263,8 +264,8 @@ bool Sd2Card::begin(uint8_t chipSelectPin, uint8_t sckDivisor) {
   uint16_t t0 = (uint16_t)millis();
   uint32_t arg;
 
-  pinMode(m_chipSelectPin, OUTPUT);
-  digitalWrite(m_chipSelectPin, HIGH);
+  PORT_MODE(m_chipSelectPin, OUTPUT);
+  PORT_WRITE(m_chipSelectPin, HIGH);
   m_spi.begin();
 
   // set SCK rate for initialization commands

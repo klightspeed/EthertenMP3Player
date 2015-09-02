@@ -17,17 +17,18 @@
  * along with the Arduino SdSpi Library.  If not, see
  * <http://www.gnu.org/licenses/>.
  */#include <SdSpi.h>
+#include "ports.h"
 #if USE_NATIVE_AVR_SPI
 //------------------------------------------------------------------------------
 void SdSpi::begin() {
  // set SS high - may be chip select for another SPI device
-  digitalWrite(SS, HIGH);
+  PORT_WRITE(SS, HIGH);
 
   // SS must be in output mode even it is not chip select
-  pinMode(SS, OUTPUT);
-  pinMode(MISO, INPUT);
-  pinMode(MOSI, OUTPUT);
-  pinMode(SCK, OUTPUT);
+  PORT_MODE(SS, OUTPUT);
+  PORT_MODE(MISO, INPUT);
+  PORT_MODE(MOSI, OUTPUT);
+  PORT_MODE(SCK, OUTPUT);
 }
 //------------------------------------------------------------------------------
 void SdSpi::init(uint8_t sckDivisor) {

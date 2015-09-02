@@ -29,20 +29,17 @@ void SPIClass::begin()
   noInterrupts(); // Protect from a scheduler and prevent transactionBegin
   if (!initialized) {
     // Set SS to high so a connected chip will be "deselected" by default
-    uint8_t port = digitalPinToPort(SS);
-    uint8_t bit = digitalPinToBitMask(SS);
-    volatile uint8_t *reg = portModeRegister(port);
 
     // if the SS pin is not already configured as an output
     // then set it high (to enable the internal pull-up resistor)
-    if(!(*reg & bit)){
-      digitalWrite(SS, HIGH);
+    if(!(DDR(SS) & _BV(PBIT(SS)))){
+      PORT_WRITE(SS, HIGH);
     }
 
     // When the SS pin is set as OUTPUT, it can be used as
     // a general purpose output port (it doesn't influence
     // SPI operations).
-    pinMode(SS, OUTPUT);
+    PORT_MODE(SS, OUTPUT);
 
     // Warning: if the SS pin ever becomes a LOW INPUT then SPI
     // automatically switches to Slave, so the data direction of
@@ -56,8 +53,8 @@ void SPIClass::begin()
     // clocking in a single bit since the lines go directly
     // from "input" to SPI control.
     // http://code.google.com/p/arduino/issues/detail?id=888
-    pinMode(SCK, OUTPUT);
-    pinMode(MOSI, OUTPUT);
+    PORT_MODE(SCK, OUTPUT);
+    PORT_MODE(MOSI, OUTPUT);
   }
   initialized++; // reference count
   SREG = sreg;
